@@ -4,8 +4,14 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
+      ENABLE_DHCP:
+        description: '是否开启DHCP'     
+        required: false
+        default: 'false'
+        type: boolean
+        
       OP_IP:
-        description: '静态IP（输入dhcp开启dhcp）'     
+        description: '静态IP地址'     
         required: false
         default: '192.168.2.2' 
         type: string
@@ -87,6 +93,7 @@ jobs:
         echo "OP_author=${{ github.event.inputs.OP_author }}" >> $GITHUB_ENV
         echo "OP_rootfs=${{ github.event.inputs.OP_rootfs }}" >> $GITHUB_ENV
         echo "CUSTOM_PLUGINS=${{ github.event.inputs.CUSTOM_PLUGINS }}" >> $GITHUB_ENV
+        echo "ENABLE_DHCP=${{ github.event.inputs.ENABLE_DHCP }}" >> $GITHUB_ENV
         if [[ "${{ matrix.repo_info.repo_url }}" == "https://github.com/openwrt/openwrt" ]]; then
           echo "DIY_P1_SH=sh/op.sh" >> $GITHUB_ENV
         else
@@ -167,13 +174,13 @@ jobs:
           echo "CONFIG_PACKAGE_default-settings-chn=y" >> openwrt/.config
         fi
         
-        if [[ "${{ github.event.inputs.OP_IP }}" == "dhcp" ]]; then
+        if [[ "${{ github.event.inputs.ENABLE_DHCP }}" == "true" ]]; then
           ls openwrt/files/etc/uci-defaults
         else
           rm -rf openwrt/files/etc/uci-defaults/dhcp-lan
           sed -i "s/192.168.1.1/${{ github.event.inputs.OP_IP }}/" openwrt/package/base-files/files/bin/config_generate
           ls openwrt/files/etc/uci-defaults
-        fi        
+        fi   
 
         IFS=' ' read -r -a plugins <<< "${{ github.event.inputs.CUSTOM_PLUGINS }}"
         for plugin in "${plugins[@]}"; do
@@ -267,7 +274,8 @@ jobs:
         files: ${{ env.FIRMWARE }}/*
         body: |
           ====================固件信息=======================
-           静态IP或DHCP：${{ github.event.inputs.OP_IP }}
+           静态IP：${{ github.event.inputs.OP_IP }}
+           DHCP状态：${{ github.event.inputs.ENABLE_DHCP }}
            插件：${{ github.event.inputs.CUSTOM_PLUGINS }}
            定制作者：${{ github.event.inputs.OP_author }}
            默认密码：无
