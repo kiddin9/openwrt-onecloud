@@ -1,0 +1,9 @@
+#!/bin/sh
+
+sleep 10
+resize2fs /dev/mmcblk1p2
+e2fsck -f /dev/mmcblk1p2
+sync
+
+rm -f /tmp/luci-indexcache
+exit 0
